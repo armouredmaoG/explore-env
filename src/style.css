@@ -1,0 +1,52 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body { background: #d9d6cd; }
+
+body {
+  font-family: "Helvetica Neue", Arial, sans-serif;
+  color: #f4f1ea;
+  overflow-x: hidden;
+}
+
+#scene {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  display: block;
+}
+
+/* Provides the scroll distance Lenis reads. Longer = slower flythrough. */
+.scroll-track { height: 600vh; }
+
+.ui {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 2rem;
+  font-size: 0.7rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  mix-blend-mode: difference;
+}
+.ui em { font-style: normal; opacity: 0.45; }
+.ui footer { align-self: center; opacity: 0.7; }
+
+#loader {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #d9d6cd;
+  color: #15161a;
+  font-size: 0.7rem;
+  letter-spacing: 0.35em;
+  text-transform: uppercase;
+  transition: opacity 0.8s ease;
+}
+#loader.hidden { opacity: 0; pointer-events: none; }

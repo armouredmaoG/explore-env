@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WebGL Environment Flythrough — study</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body>
+    <canvas id="scene"></canvas>
+
+    <div id="loader"><span>Loading</span></div>
+
+    <!-- Lenis needs real scrollable height; this empty tall block provides it.
+         The visible scene is the fixed <canvas> behind it. -->
+    <div class="scroll-track" aria-hidden="true"></div>
+
+    <div class="ui">
+      <header>Cartier — Watches &amp; Wonders <em>· study build</em></header>
+      <footer>Scroll to move through the environment</footer>
+    </div>
+
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
