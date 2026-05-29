@@ -462,9 +462,23 @@ function returnToScroll() {
 }
 
 /* ----- Resize ----- */
+let prevWidth = window.innerWidth;
+let prevHeight = window.innerHeight;
+
 window.addEventListener("resize", () => {
-  sizes.width = window.innerWidth;
-  sizes.height = window.innerHeight;
+  const newWidth = window.innerWidth;
+  const newHeight = window.innerHeight;
+
+  // Ignore vertical-only height changes of small amounts (mobile address bar toggling)
+  if (isMobile && newWidth === prevWidth && Math.abs(newHeight - prevHeight) < 150) {
+    return;
+  }
+
+  prevWidth = newWidth;
+  prevHeight = newHeight;
+  sizes.width = newWidth;
+  sizes.height = newHeight;
+
   updateCamera();
   renderer.setSize(sizes.width, sizes.height);
   renderer.setPixelRatio(isMobile ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2));
