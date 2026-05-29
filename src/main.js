@@ -8,6 +8,7 @@ import { FilmPass } from "three/addons/postprocessing/FilmPass.js";
 import { SMAAPass } from "three/addons/postprocessing/SMAAPass.js";
 import { AfterimagePass } from "three/addons/postprocessing/AfterimagePass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
+import { OutlinePass } from "three/addons/postprocessing/OutlinePass.js";
 import Lenis from "lenis";
 import GUI from "lil-gui";
 import gsap from "gsap";
@@ -21,6 +22,8 @@ import gsap from "gsap";
 const canvas = document.getElementById("scene");
 const sizes = { width: window.innerWidth, height: window.innerHeight };
 
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
 /* ----- Renderer ----- */
 const renderer = new THREE.WebGLRenderer({
   canvas,
@@ -28,7 +31,7 @@ const renderer = new THREE.WebGLRenderer({
   powerPreference: "high-performance",
 });
 renderer.setSize(sizes.width, sizes.height);
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(isMobile ? 1.0 : Math.min(window.devicePixelRatio, 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.15;
 
@@ -49,9 +52,9 @@ const camera = new THREE.PerspectiveCamera(
 const stops = [
   { x: -4, z: 9 },
   { x: 4, z: -14 },
-  { x: -4, z: -30 },
-  { x: 4, z: -40 },
-  { x: -3, z: -56 },
+  { x: -4, z: -26 },
+  { x: 4, z: -39 },
+  { x: -3, z: -50 },
 ];
 
 /* ----- Camera path ----- */
@@ -236,12 +239,30 @@ const bokeh = new BokehPass(scene, camera, {
 const afterimage = new AfterimagePass(0.4);
 const smaa = new SMAAPass(sizes.width, sizes.height);
 
-composer.addPass(afterimage);
-composer.addPass(gtao);
-// composer.addPass(bokeh);
+if (!isMobile) {
+  composer.addPass(afterimage);
+  composer.addPass(gtao);
+  composer.addPass(bokeh);
+}
 composer.addPass(bloom);
 composer.addPass(film);
-composer.addPass(smaa);
+
+const outlinePass = new OutlinePass(
+  new THREE.Vector2(sizes.width, sizes.height),
+  scene,
+  camera,
+);
+outlinePass.edgeStrength = 4;
+outlinePass.edgeGlow = 0.7;
+outlinePass.edgeThickness = 1.5;
+outlinePass.pulsePeriod = 2;
+outlinePass.visibleEdgeColor.set("#ffffff");
+outlinePass.hiddenEdgeColor.set("#444444");
+composer.addPass(outlinePass);
+
+if (!isMobile) {
+  composer.addPass(smaa);
+}
 composer.addPass(new OutputPass());
 
 const bloomFolder = gui.addFolder("Bloom");
@@ -262,6 +283,8 @@ let isAnimating = false;
 let savedProgress = 0;
 const raycaster = new THREE.Raycaster();
 const pointer = new THREE.Vector2();
+let activePedestalIndex = -1;
+let isHoveringActive = false;
 const animLookTarget = new THREE.Vector3();
 
 canvas.addEventListener("click", (e) => {
@@ -275,10 +298,63 @@ canvas.addEventListener("click", (e) => {
     return;
   }
 
-  // Test only the first pedestal's column
-  const hits = raycaster.intersectObject(columns[0]);
-  if (hits.length > 0) {
-    flyToPedestal(0);
+  if (activePedestalIndex !== -1) {
+    const hits = raycaster.intersectObject(columns[activePedestalIndex].parent, true);
+    if (hits.length > 0) {
+      flyToPedestal(activePedestalIndex);
+    }
+  }
+});
+
+
+/* ----- Clone materials for all pedestals to manage opacity independently ----- */
+for (let i = 0; i < stops.length; i++) {
+  columns[i].material = columns[i].material.clone();
+  rings[i].material = rings[i].material.clone();
+  columns[i].material.transparent = true;
+  rings[i].material.transparent = true;
+  columns[i].material.opacity = 1.0;
+  rings[i].material.opacity = 1.0;
+}
+
+// Clear initial selectedObjects since activePedestalIndex will handle it dynamically
+outlinePass.selectedObjects = [];
+
+/* ----- Hover outline (pointer + outline shader) ----- */
+canvas.addEventListener("pointermove", (e) => {
+  if (isAnimating) {
+    outlinePass.selectedObjects = [];
+    canvas.style.cursor = "default";
+    isHoveringActive = false;
+    return;
+  }
+  pointer.x = (e.clientX / sizes.width) * 2 - 1;
+  pointer.y = -(e.clientY / sizes.height) * 2 + 1;
+  raycaster.setFromCamera(pointer, camera);
+
+  if (activePedestalIndex !== -1) {
+    const hits = raycaster.intersectObject(columns[activePedestalIndex].parent, true);
+    if (hits.length > 0) {
+      // Stop pulsating and set full opacity on hover
+      outlinePass.pulsePeriod = 0;
+      columns[activePedestalIndex].material.opacity = 1.0;
+      rings[activePedestalIndex].material.opacity = 1.0;
+      canvas.style.cursor = "pointer";
+      isHoveringActive = true;
+      outlinePass.selectedObjects = [columns[activePedestalIndex].parent];
+    } else {
+      // Resume pulsating and restore default opacity when not hovered
+      outlinePass.pulsePeriod = 2;
+      columns[activePedestalIndex].material.opacity = 0.99;
+      rings[activePedestalIndex].material.opacity = 0.99;
+      canvas.style.cursor = "default";
+      isHoveringActive = false;
+      outlinePass.selectedObjects = [columns[activePedestalIndex].parent];
+    }
+  } else {
+    canvas.style.cursor = "default";
+    isHoveringActive = false;
+    outlinePass.selectedObjects = [];
   }
 });
 
@@ -291,6 +367,13 @@ function flyToPedestal(index) {
   isAnimating = true;
   savedProgress = progress;
 
+  // Clear outline and set opacity to 1.0 during fly-to focus
+  outlinePass.selectedObjects = [];
+  for (let i = 0; i < stops.length; i++) {
+    columns[i].material.opacity = 1.0;
+    rings[i].material.opacity = 1.0;
+  }
+
   // Snapshot current lookAt so GSAP can lerp from it
   animLookTarget.copy(lookTarget);
 
@@ -299,13 +382,13 @@ function flyToPedestal(index) {
 
   gsap.to(camera.position, {
     x: dest.x, y: dest.y, z: dest.z,
-    duration: 1.4,
+    duration: 0.9,
     ease: "power3.inOut",
   });
 
   gsap.to(animLookTarget, {
     x: stop.x, y: RING_HEIGHT, z: stop.z,
-    duration: 1.4,
+    duration: 0.9,
     ease: "power3.inOut",
   });
 }
@@ -317,7 +400,7 @@ function returnToScroll() {
 
   gsap.to(camera.position, {
     x: scrollPos.x, y: scrollPos.y, z: scrollPos.z,
-    duration: 1.2,
+    duration: 0.8,
     ease: "power2.inOut",
     onComplete: () => {
       progress = savedProgress;
@@ -353,7 +436,7 @@ function returnToScroll() {
 
   gsap.to(animLookTarget, {
     x: returnLook.x, y: returnLook.y, z: returnLook.z,
-    duration: 1.2,
+    duration: 0.8,
     ease: "power2.inOut",
   });
 }
@@ -365,7 +448,7 @@ window.addEventListener("resize", () => {
   camera.aspect = sizes.width / sizes.height;
   camera.updateProjectionMatrix();
   renderer.setSize(sizes.width, sizes.height);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(isMobile ? 1.0 : Math.min(window.devicePixelRatio, 2));
   composer.setSize(sizes.width, sizes.height);
 });
 
@@ -407,7 +490,11 @@ function frame(time) {
     let maxInf = 0;
     let bx = 0;
     let bz = 0;
-    for (const stop of stops) {
+    let closestIndex = -1;
+    let minPedDist = Infinity;
+
+    for (let i = 0; i < stops.length; i++) {
+      const stop = stops[i];
       const dx = stop.x - camera.position.x;
       const dz = stop.z - camera.position.z;
       const inf = Math.exp(-(dx * dx + dz * dz) / GLANCE_RANGE_SQ);
@@ -415,6 +502,25 @@ function frame(time) {
       bz += stop.z * inf;
       totalInf += inf;
       if (inf > maxInf) maxInf = inf;
+
+      // Only consider pedestals in front of the camera
+      if (camera.position.z > stop.z - 1) {
+        const pedPos = new THREE.Vector3(stop.x, RING_HEIGHT, stop.z);
+        const dist = camera.position.distanceTo(pedPos);
+        if (dist < minPedDist) {
+          minPedDist = dist;
+          closestIndex = i;
+        }
+      }
+    }
+
+    // Determine active pedestal and update Bokeh focus distance dynamically
+    if (closestIndex !== -1 && minPedDist < 25) {
+      activePedestalIndex = closestIndex;
+      if (!isMobile) bokeh.uniforms['focus'].value = minPedDist;
+    } else {
+      activePedestalIndex = -1;
+      if (!isMobile) bokeh.uniforms['focus'].value = 15;
     }
 
     if (totalInf > 0.001) {
@@ -424,6 +530,26 @@ function frame(time) {
       lookTarget.copy(forwardLook);
     }
     camera.lookAt(lookTarget);
+
+    // Handle outline default selection and opacities for active vs inactive pedestals
+    if (activePedestalIndex !== -1) {
+      if (!isHoveringActive) {
+        outlinePass.selectedObjects = [columns[activePedestalIndex].parent];
+        outlinePass.pulsePeriod = 2;
+        columns[activePedestalIndex].material.opacity = 0.99;
+        rings[activePedestalIndex].material.opacity = 0.99;
+      }
+    } else {
+      outlinePass.selectedObjects = [];
+    }
+
+    // Enforce solid opacity for inactive pedestals
+    for (let i = 0; i < stops.length; i++) {
+      if (i !== activePedestalIndex) {
+        columns[i].material.opacity = 1.0;
+        rings[i].material.opacity = 1.0;
+      }
+    }
   } else {
     camera.lookAt(animLookTarget);
   }
@@ -434,6 +560,27 @@ function frame(time) {
     ring.rotation.x = Math.sin(t * 0.5 + i) * 0.2;
   });
 
+  // Project click-to-view label above the active pedestal
+  if (clickLabelEl) {
+    if (!isAnimating && activePedestalIndex !== -1) {
+      labelPos.set(stops[activePedestalIndex].x, RING_HEIGHT + 1.2, stops[activePedestalIndex].z);
+      const dist = camera.position.distanceTo(labelPos);
+      labelPos.project(camera);
+
+      // Only show when in front of camera, reasonably close, and not yet passed
+      if (labelPos.z <= 1 && dist < 25 && camera.position.z > stops[activePedestalIndex].z - 1) {
+        const x = (labelPos.x * 0.5 + 0.5) * sizes.width;
+        const y = (labelPos.y * -0.5 + 0.5) * sizes.height;
+        clickLabelEl.style.display = "block";
+        clickLabelEl.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
+      } else {
+        clickLabelEl.style.display = "none";
+      }
+    } else {
+      clickLabelEl.style.display = "none";
+    }
+  }
+
   if (debugParams.showHelpers) {
     spotHelpers.forEach((h) => h.update());
     fillHelper.update();
@@ -442,6 +589,8 @@ function frame(time) {
   composer.render();
   requestAnimationFrame(frame);
 }
+const labelPos = new THREE.Vector3();
+const clickLabelEl = document.getElementById("click-label");
 requestAnimationFrame(frame);
 
 /* ----- Hide the loader once the first frame has rendered ----- */

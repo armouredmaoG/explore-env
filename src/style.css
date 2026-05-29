@@ -1,6 +1,13 @@
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
-html, body { background: #d9d6cd; }
+html,
+body {
+  background: #d9d6cd;
+}
 
 body {
   font-family: "Helvetica Neue", Arial, sans-serif;
@@ -17,7 +24,9 @@ body {
 }
 
 /* Provides the scroll distance Lenis reads. Longer = slower flythrough. */
-.scroll-track { height: 600vh; }
+.scroll-track {
+  height: 600vh;
+}
 
 .ui {
   position: fixed;
@@ -32,8 +41,16 @@ body {
   text-transform: uppercase;
   mix-blend-mode: difference;
 }
-.ui em { font-style: normal; opacity: 0.45; }
-.ui footer { align-self: center; opacity: 0.7; }
+
+.ui em {
+  font-style: normal;
+  opacity: 0.45;
+}
+
+.ui footer {
+  align-self: center;
+  opacity: 0.7;
+}
 
 #loader {
   position: fixed;
@@ -49,4 +66,29 @@ body {
   text-transform: uppercase;
   transition: opacity 0.8s ease;
 }
-#loader.hidden { opacity: 0; pointer-events: none; }
+
+#loader.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.click-label {
+  position: fixed;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  font-size: 0.4rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #15161a;
+  background: rgba(244, 241, 234, 0.9);
+  padding: 0.5rem 1rem;
+  border-radius: 100px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  font-weight: 500;
+  display: none;
+  z-index: 5;
+  white-space: nowrap;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  transition: opacity 0.3s ease;
+}
