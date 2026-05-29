@@ -262,7 +262,7 @@ const bloom = new UnrealBloomPass(
   0.3,
   1,
 );
-const film = new FilmPass(isMobile ? 0.05 : 0.3, false);
+const film = new FilmPass(0.3, false);
 const bokeh = new BokehPass(scene, camera, {
   focus: 15,
   aperture: 0.0001,
@@ -277,7 +277,9 @@ if (!isMobile) {
   composer.addPass(bokeh);
 }
 composer.addPass(bloom);
-composer.addPass(film);
+if (!isMobile) {
+  composer.addPass(film);
+}
 
 const outlinePass = new OutlinePass(
   new THREE.Vector2(sizes.width, sizes.height),
