@@ -1,9 +1,7 @@
 import * as THREE from "three";
 import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
-import { GTAOPass } from "three/addons/postprocessing/GTAOPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
-import { BokehPass } from "three/addons/postprocessing/BokehPass.js";
 import { FilmPass } from "three/addons/postprocessing/FilmPass.js";
 import { AfterimagePass } from "three/addons/postprocessing/AfterimagePass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
@@ -254,8 +252,6 @@ if (renderer.capabilities.isWebGL2) {
 }
 const composer = new EffectComposer(renderer, renderTarget);
 composer.addPass(new RenderPass(scene, camera));
-const gtao = new GTAOPass(scene, camera, sizes.width, sizes.height);
-gtao.output = GTAOPass.OUTPUT.Default;
 const bloom = new UnrealBloomPass(
   new THREE.Vector2(sizes.width, sizes.height),
   0.2,
@@ -263,18 +259,11 @@ const bloom = new UnrealBloomPass(
   1,
 );
 const film = new FilmPass(0.3, false);
-const bokeh = new BokehPass(scene, camera, {
-  focus: 15,
-  aperture: 0.0001,
-  maxblur: 0.01,
-});
 const afterimage = new AfterimagePass(0.4);
 const fxaaPass = new ShaderPass(FXAAShader);
 
 if (!isMobile) {
   composer.addPass(afterimage);
-  composer.addPass(gtao);
-  composer.addPass(bokeh);
 }
 composer.addPass(bloom);
 if (!isMobile) {
@@ -577,13 +566,11 @@ function frame(time) {
       }
     }
 
-    // Determine active pedestal and update Bokeh focus distance dynamically
+    // Determine active pedestal dynamically
     if (closestIndex !== -1 && minPedDist < 100) {
       activePedestalIndex = closestIndex;
-      if (!isMobile) bokeh.uniforms['focus'].value = minPedDist;
     } else {
       activePedestalIndex = -1;
-      if (!isMobile) bokeh.uniforms['focus'].value = 15;
     }
 
     if (totalInf > 0.001) {
