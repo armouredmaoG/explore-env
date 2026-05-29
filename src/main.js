@@ -48,6 +48,19 @@ const camera = new THREE.PerspectiveCamera(
   220,
 );
 
+const updateCamera = () => {
+  const aspect = sizes.width / sizes.height;
+  camera.aspect = aspect;
+  if (aspect < 1.0) {
+    // Narrow portrait screen: increase FOV to zoom out horizontally and keep side pedestals visible
+    camera.fov = Math.min(85, 55 + (1.0 - aspect) * 40);
+  } else {
+    camera.fov = 55;
+  }
+  camera.updateProjectionMatrix();
+};
+updateCamera();
+
 /* ----- Pedestal positions (single source of truth) ----- */
 const stops = [
   { x: -4, z: 9 },
@@ -383,8 +396,9 @@ function flyToPedestal(index) {
   // Snapshot current lookAt so GSAP can lerp from it
   animLookTarget.copy(lookTarget);
 
-  // Camera destination: slightly in front & above the pedestal
-  const dest = { x: stop.x + 2, y: 3.5, z: stop.z + 3 };
+  // Camera destination: slightly in front & above the pedestal, offset towards the center corridor
+  const xOffset = stop.x < 0 ? 2 : -2;
+  const dest = { x: stop.x + xOffset, y: 3.5, z: stop.z + 3 };
 
   gsap.to(camera.position, {
     x: dest.x, y: dest.y, z: dest.z,
@@ -451,8 +465,7 @@ function returnToScroll() {
 window.addEventListener("resize", () => {
   sizes.width = window.innerWidth;
   sizes.height = window.innerHeight;
-  camera.aspect = sizes.width / sizes.height;
-  camera.updateProjectionMatrix();
+  updateCamera();
   renderer.setSize(sizes.width, sizes.height);
   renderer.setPixelRatio(isMobile ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2));
   composer.setSize(sizes.width, sizes.height);
@@ -509,8 +522,8 @@ function frame(time) {
       totalInf += inf;
       if (inf > maxInf) maxInf = inf;
 
-      // Only consider pedestals in front of the camera
-      if (camera.position.z > stop.z - 1) {
+      // Consider a pedestal passed when the camera gets within 4.5 units of it (since it moves off-screen)
+      if (camera.position.z > stop.z + 4.5) {
         const pedPos = new THREE.Vector3(stop.x, RING_HEIGHT, stop.z);
         const dist = camera.position.distanceTo(pedPos);
         if (dist < minPedDist) {
@@ -521,7 +534,7 @@ function frame(time) {
     }
 
     // Determine active pedestal and update Bokeh focus distance dynamically
-    if (closestIndex !== -1 && minPedDist < 25) {
+    if (closestIndex !== -1 && minPedDist < 100) {
       activePedestalIndex = closestIndex;
       if (!isMobile) bokeh.uniforms['focus'].value = minPedDist;
     } else {
@@ -574,7 +587,7 @@ function frame(time) {
       labelPos.project(camera);
 
       // Only show when in front of camera, reasonably close, and not yet passed
-      if (labelPos.z <= 1 && dist < 25 && camera.position.z > stops[activePedestalIndex].z - 1) {
+      if (labelPos.z <= 1 && dist < 200 && camera.position.z > stops[activePedestalIndex].z + 4.5) {
         const x = (labelPos.x * 0.5 + 0.5) * sizes.width;
         const y = (labelPos.y * -0.5 + 0.5) * sizes.height;
         clickLabelEl.style.display = "block";
