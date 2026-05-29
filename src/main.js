@@ -3,7 +3,6 @@ import { EffectComposer } from "three/addons/postprocessing/EffectComposer.js";
 import { RenderPass } from "three/addons/postprocessing/RenderPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { FilmPass } from "three/addons/postprocessing/FilmPass.js";
-import { AfterimagePass } from "three/addons/postprocessing/AfterimagePass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { OutlinePass } from "three/addons/postprocessing/OutlinePass.js";
 import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
@@ -247,7 +246,7 @@ const debugParams = { showHelpers: false };
 let renderTarget;
 if (renderer.capabilities.isWebGL2) {
   renderTarget = new THREE.WebGLRenderTarget(sizes.width, sizes.height, {
-    samples: 4 // 4x MSAA
+    samples: 0 // Disable WebGL2 MSAA to save performance since we use FXAA
   });
 }
 const composer = new EffectComposer(renderer, renderTarget);
@@ -259,12 +258,9 @@ const bloom = new UnrealBloomPass(
   1,
 );
 const film = new FilmPass(0.3, false);
-const afterimage = new AfterimagePass(0.4);
 const fxaaPass = new ShaderPass(FXAAShader);
 
-if (!isMobile) {
-  composer.addPass(afterimage);
-}
+// No afterimage pass
 composer.addPass(bloom);
 if (!isMobile) {
   composer.addPass(film);
@@ -487,7 +483,7 @@ window.addEventListener("resize", () => {
 
   updateCamera();
   renderer.setSize(sizes.width, sizes.height);
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
   composer.setSize(sizes.width, sizes.height);
 
   const pixelRatio = renderer.getPixelRatio();
