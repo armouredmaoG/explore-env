@@ -5,10 +5,11 @@ import { GTAOPass } from "three/addons/postprocessing/GTAOPass.js";
 import { UnrealBloomPass } from "three/addons/postprocessing/UnrealBloomPass.js";
 import { BokehPass } from "three/addons/postprocessing/BokehPass.js";
 import { FilmPass } from "three/addons/postprocessing/FilmPass.js";
-import { SMAAPass } from "three/addons/postprocessing/SMAAPass.js";
 import { AfterimagePass } from "three/addons/postprocessing/AfterimagePass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { OutlinePass } from "three/addons/postprocessing/OutlinePass.js";
+import { ShaderPass } from "three/addons/postprocessing/ShaderPass.js";
+import { FXAAShader } from "three/addons/shaders/FXAAShader.js";
 import Lenis from "lenis";
 // import GUI from "lil-gui";
 import gsap from "gsap";
@@ -41,7 +42,7 @@ const renderer = new THREE.WebGLRenderer({
   powerPreference: "high-performance",
 });
 renderer.setSize(sizes.width, sizes.height);
-renderer.setPixelRatio(isMobile ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.15;
 
@@ -261,14 +262,14 @@ const bloom = new UnrealBloomPass(
   0.3,
   1,
 );
-const film = new FilmPass(0.3, false);
+const film = new FilmPass(isMobile ? 0.05 : 0.3, false);
 const bokeh = new BokehPass(scene, camera, {
   focus: 15,
   aperture: 0.0001,
   maxblur: 0.01,
 });
 const afterimage = new AfterimagePass(0.4);
-const smaa = new SMAAPass(sizes.width, sizes.height);
+const fxaaPass = new ShaderPass(FXAAShader);
 
 if (!isMobile) {
   composer.addPass(afterimage);
@@ -291,9 +292,12 @@ outlinePass.visibleEdgeColor.set("#ffffff");
 outlinePass.hiddenEdgeColor.set("#444444");
 composer.addPass(outlinePass);
 
-if (!isMobile) {
-  composer.addPass(smaa);
-}
+const pixelRatio = renderer.getPixelRatio();
+fxaaPass.uniforms["resolution"].value.set(
+  1 / (sizes.width * pixelRatio),
+  1 / (sizes.height * pixelRatio)
+);
+composer.addPass(fxaaPass);
 composer.addPass(new OutputPass());
 
 // const bloomFolder = gui.addFolder("Bloom");
@@ -492,8 +496,14 @@ window.addEventListener("resize", () => {
 
   updateCamera();
   renderer.setSize(sizes.width, sizes.height);
-  renderer.setPixelRatio(isMobile ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
   composer.setSize(sizes.width, sizes.height);
+
+  const pixelRatio = renderer.getPixelRatio();
+  fxaaPass.uniforms["resolution"].value.set(
+    1 / (sizes.width * pixelRatio),
+    1 / (sizes.height * pixelRatio)
+  );
 });
 
 /* ----- Render loop ----- */
