@@ -31,7 +31,7 @@ const renderer = new THREE.WebGLRenderer({
   powerPreference: "high-performance",
 });
 renderer.setSize(sizes.width, sizes.height);
-renderer.setPixelRatio(isMobile ? 1.0 : Math.min(window.devicePixelRatio, 2));
+renderer.setPixelRatio(isMobile ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.15;
 
@@ -220,7 +220,13 @@ gui.add(debugParams, "showHelpers").onChange((v) => {
 spotFolder.open();
 
 /* ----- Post-processing ----- */
-const composer = new EffectComposer(renderer);
+let renderTarget;
+if (renderer.capabilities.isWebGL2) {
+  renderTarget = new THREE.WebGLRenderTarget(sizes.width, sizes.height, {
+    samples: 4 // 4x MSAA
+  });
+}
+const composer = new EffectComposer(renderer, renderTarget);
 composer.addPass(new RenderPass(scene, camera));
 const gtao = new GTAOPass(scene, camera, sizes.width, sizes.height);
 gtao.output = GTAOPass.OUTPUT.Default;
@@ -448,7 +454,7 @@ window.addEventListener("resize", () => {
   camera.aspect = sizes.width / sizes.height;
   camera.updateProjectionMatrix();
   renderer.setSize(sizes.width, sizes.height);
-  renderer.setPixelRatio(isMobile ? 1.0 : Math.min(window.devicePixelRatio, 2));
+  renderer.setPixelRatio(isMobile ? Math.min(window.devicePixelRatio, 1.5) : Math.min(window.devicePixelRatio, 2));
   composer.setSize(sizes.width, sizes.height);
 });
 
