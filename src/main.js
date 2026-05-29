@@ -10,7 +10,7 @@ import { AfterimagePass } from "three/addons/postprocessing/AfterimagePass.js";
 import { OutputPass } from "three/addons/postprocessing/OutputPass.js";
 import { OutlinePass } from "three/addons/postprocessing/OutlinePass.js";
 import Lenis from "lenis";
-import GUI from "lil-gui";
+// import GUI from "lil-gui";
 import gsap from "gsap";
 
 /* ============================================================
@@ -24,8 +24,8 @@ const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/
 const getScreenHeight = () => {
   if (isMobile) {
     const isPortrait = window.innerHeight > window.innerWidth;
-    return isPortrait 
-      ? Math.max(window.screen.width, window.screen.height) 
+    return isPortrait
+      ? Math.max(window.screen.width, window.screen.height)
       : Math.min(window.screen.width, window.screen.height);
   }
   return window.innerHeight;
@@ -75,16 +75,16 @@ updateCamera();
 const stops = [
   { x: -4, z: 9 },
   { x: 4, z: -14 },
-  { x: -4, z: -26 },
-  { x: 4, z: -39 },
-  { x: -3, z: -50 },
+  { x: -4, z: -32 },
+  { x: 4, z: -48 },
+  { x: -3, z: -60 },
 ];
 
 /* ----- Camera path ----- */
 // Straight line down the corridor.
 const cameraPath = new THREE.LineCurve3(
   new THREE.Vector3(0, 2.5, 26),   // entry
-  new THREE.Vector3(0, 2.5, -45),  // exit
+  new THREE.Vector3(0, 2.5, -55),  // exit
 );
 
 /* ----- Pedestal-progress mapping -----
@@ -157,8 +157,8 @@ for (const { x, z } of stops) {
 }
 
 // Pillars lining the corridor.
-for (let i = 0; i < 16; i++) {
-  const z = 20 - i * 5;
+for (let i = 0; i < 18; i++) {
+  const z = 22 - i * 5;
   for (const side of [-6.5, 6.5]) {
     const pillar = new THREE.Mesh(
       new THREE.BoxGeometry(0.6, 10, 0.6),
@@ -179,8 +179,9 @@ fill.position.set(-5, 14, 4);
 scene.add(fill);
 
 /* ----- GUI ----- */
-const gui = new GUI({ title: "Lighting" });
+// const gui = new GUI({ title: "Lighting" });
 
+/*
 const spotHelpers = spots.map((s) => {
   const h = new THREE.SpotLightHelper(s);
   scene.add(h);
@@ -188,6 +189,7 @@ const spotHelpers = spots.map((s) => {
 });
 const fillHelper = new THREE.DirectionalLightHelper(fill, 2, "#ff0066");
 scene.add(fillHelper);
+*/
 
 const spotParams = {
   x: 0,
@@ -213,34 +215,34 @@ const updateSpots = () => {
   });
 };
 
-const spotFolder = gui.addFolder("Spotlights (all 5)");
-spotFolder.add(spotParams, "x", -5, 5, 0.1).onChange(updateSpots).name("offset X");
-spotFolder.add(spotParams, "y", 0, 20, 0.1).onChange(updateSpots).name("height (Y)");
-spotFolder.add(spotParams, "z", -5, 5, 0.1).onChange(updateSpots).name("offset Z");
-spotFolder.add(spotParams, "intensity", 0, 300, 1).onChange(updateSpots);
-spotFolder.add(spotParams, "angle", 0.05, Math.PI / 2, 0.01).onChange(updateSpots);
-spotFolder.add(spotParams, "penumbra", 0, 1, 0.01).onChange(updateSpots);
-spotFolder.add(spotParams, "decay", 0, 3, 0.1).onChange(updateSpots);
-spotFolder.add(spotParams, "distance", 0, 40, 0.5).onChange(updateSpots);
-spotFolder.addColor(spotParams, "color").onChange(updateSpots);
+// const spotFolder = gui.addFolder("Spotlights (all 5)");
+// spotFolder.add(spotParams, "x", -5, 5, 0.1).onChange(updateSpots).name("offset X");
+// spotFolder.add(spotParams, "y", 0, 20, 0.1).onChange(updateSpots).name("height (Y)");
+// spotFolder.add(spotParams, "z", -5, 5, 0.1).onChange(updateSpots).name("offset Z");
+// spotFolder.add(spotParams, "intensity", 0, 300, 1).onChange(updateSpots);
+// spotFolder.add(spotParams, "angle", 0.05, Math.PI / 2, 0.01).onChange(updateSpots);
+// spotFolder.add(spotParams, "penumbra", 0, 1, 0.01).onChange(updateSpots);
+// spotFolder.add(spotParams, "decay", 0, 3, 0.1).onChange(updateSpots);
+// spotFolder.add(spotParams, "distance", 0, 40, 0.5).onChange(updateSpots);
+// spotFolder.addColor(spotParams, "color").onChange(updateSpots);
 
-const fillFolder = gui.addFolder("Directional Fill");
-fillFolder.add(fill.position, "x", -20, 20, 0.1).name("position X");
-fillFolder.add(fill.position, "y", -20, 30, 0.1).name("position Y");
-fillFolder.add(fill.position, "z", -20, 20, 0.1).name("position Z");
-fillFolder.add(fill, "intensity", 0, 10, 0.1);
-fillFolder.addColor({ c: "#fff3e0" }, "c").onChange((v) => fill.color.set(v)).name("color");
+// const fillFolder = gui.addFolder("Directional Fill");
+// fillFolder.add(fill.position, "x", -20, 20, 0.1).name("position X");
+// fillFolder.add(fill.position, "y", -20, 30, 0.1).name("position Y");
+// fillFolder.add(fill.position, "z", -20, 20, 0.1).name("position Z");
+// fillFolder.add(fill, "intensity", 0, 10, 0.1);
+// fillFolder.addColor({ c: "#fff3e0" }, "c").onChange((v) => fill.color.set(v)).name("color");
 
-const sceneFolder = gui.addFolder("Scene");
-sceneFolder.add(renderer, "toneMappingExposure", 0, 3, 0.05).name("exposure");
+// const sceneFolder = gui.addFolder("Scene");
+// sceneFolder.add(renderer, "toneMappingExposure", 0, 3, 0.05).name("exposure");
 
-const debugParams = { showHelpers: true };
-gui.add(debugParams, "showHelpers").onChange((v) => {
-  spotHelpers.forEach((h) => (h.visible = v));
-  fillHelper.visible = v;
-});
+const debugParams = { showHelpers: false };
+// gui.add(debugParams, "showHelpers").onChange((v) => {
+//   spotHelpers.forEach((h) => (h.visible = v));
+//   fillHelper.visible = v;
+// });
 
-spotFolder.open();
+// spotFolder.open();
 
 /* ----- Post-processing ----- */
 let renderTarget;
@@ -294,10 +296,10 @@ if (!isMobile) {
 }
 composer.addPass(new OutputPass());
 
-const bloomFolder = gui.addFolder("Bloom");
-bloomFolder.add(bloom, "strength", 0, 3, 0.05);
-bloomFolder.add(bloom, "radius", 0, 2, 0.05);
-bloomFolder.add(bloom, "threshold", 0, 1, 0.01);
+// const bloomFolder = gui.addFolder("Bloom");
+// bloomFolder.add(bloom, "strength", 0, 3, 0.05);
+// bloomFolder.add(bloom, "radius", 0, 2, 0.05);
+// bloomFolder.add(bloom, "threshold", 0, 1, 0.01);
 
 /* ----- Scroll ----- */
 const lenis = new Lenis();
@@ -412,13 +414,13 @@ function flyToPedestal(index) {
 
   gsap.to(camera.position, {
     x: dest.x, y: dest.y, z: dest.z,
-    duration: 0.9,
+    duration: 1.1,
     ease: "power3.inOut",
   });
 
   gsap.to(animLookTarget, {
     x: stop.x, y: RING_HEIGHT, z: stop.z,
-    duration: 0.9,
+    duration: 1.1,
     ease: "power3.inOut",
   });
 }
@@ -430,7 +432,7 @@ function returnToScroll() {
 
   gsap.to(camera.position, {
     x: scrollPos.x, y: scrollPos.y, z: scrollPos.z,
-    duration: 0.8,
+    duration: 0.9,
     ease: "power2.inOut",
     onComplete: () => {
       progress = savedProgress;
@@ -450,7 +452,11 @@ function returnToScroll() {
   for (const stop of stops) {
     const dx = stop.x - scrollPos.x;
     const dz = stop.z - scrollPos.z;
-    const inf = Math.exp(-(dx * dx + dz * dz) / GLANCE_RANGE_SQ);
+    let dirFactor = 1.0;
+    if (dz > -3.5) {
+      dirFactor = Math.max(0, 1.0 - (dz + 3.5) / 6.0);
+    }
+    const inf = Math.exp(-(dx * dx + dz * dz) / GLANCE_RANGE_SQ) * dirFactor;
     bx += stop.x * inf;
     bz += stop.z * inf;
     totalInf += inf;
@@ -466,7 +472,7 @@ function returnToScroll() {
 
   gsap.to(animLookTarget, {
     x: returnLook.x, y: returnLook.y, z: returnLook.z,
-    duration: 0.8,
+    duration: 0.9,
     ease: "power2.inOut",
   });
 }
@@ -506,8 +512,8 @@ const forwardDir = new THREE.Vector3()
 //   GLANCE_AMOUNT: 0 = no glance, 0.18 = subtle head-turn, 1 = full lookAt.
 //   GLANCE_RANGE: distance (world units) at which a pedestal's pull drops
 //     to ~37%. Larger = glances start earlier and last longer.
-const GLANCE_AMOUNT = 0.06;
-const GLANCE_RANGE = 5;
+const GLANCE_AMOUNT = isMobile ? 1.5 : 0.08;
+const GLANCE_RANGE = 18;
 const GLANCE_RANGE_SQ = GLANCE_RANGE * GLANCE_RANGE;
 
 function frame(time) {
@@ -535,13 +541,20 @@ function frame(time) {
       const stop = stops[i];
       const dx = stop.x - camera.position.x;
       const dz = stop.z - camera.position.z;
-      const inf = Math.exp(-(dx * dx + dz * dz) / GLANCE_RANGE_SQ);
+
+      // Calculate directional factor: starts fading 3.5 units before passing the pedestal, over 6 units
+      let dirFactor = 1.0;
+      if (dz > -3.5) {
+        dirFactor = Math.max(0, 1.0 - (dz + 3.5) / 6.0);
+      }
+
+      const inf = Math.exp(-(dx * dx + dz * dz) / GLANCE_RANGE_SQ) * dirFactor;
       bx += stop.x * inf;
       bz += stop.z * inf;
       totalInf += inf;
       if (inf > maxInf) maxInf = inf;
 
-      // Consider a pedestal passed when the camera gets within 4.5 units of it (since it moves off-screen)
+      // Determine active pedestal only if it is in front of the camera (off-screen threshold)
       if (camera.position.z > stop.z + 4.5) {
         const pedPos = new THREE.Vector3(stop.x, RING_HEIGHT, stop.z);
         const dist = camera.position.distanceTo(pedPos);
@@ -619,10 +632,12 @@ function frame(time) {
     }
   }
 
+  /*
   if (debugParams.showHelpers) {
     spotHelpers.forEach((h) => h.update());
     fillHelper.update();
   }
+  */
 
   composer.render();
   requestAnimationFrame(frame);
