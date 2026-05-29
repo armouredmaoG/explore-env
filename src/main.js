@@ -19,10 +19,20 @@ import gsap from "gsap";
    auto-faces the nearest pedestal ring as it passes each one.
    ============================================================ */
 
-const canvas = document.getElementById("scene");
-const sizes = { width: window.innerWidth, height: window.innerHeight };
-
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+const getScreenHeight = () => {
+  if (isMobile) {
+    const isPortrait = window.innerHeight > window.innerWidth;
+    return isPortrait 
+      ? Math.max(window.screen.width, window.screen.height) 
+      : Math.min(window.screen.width, window.screen.height);
+  }
+  return window.innerHeight;
+};
+
+const canvas = document.getElementById("scene");
+const sizes = { width: window.innerWidth, height: getScreenHeight() };
 
 /* ----- Renderer ----- */
 const renderer = new THREE.WebGLRenderer({
@@ -462,20 +472,15 @@ function returnToScroll() {
 }
 
 /* ----- Resize ----- */
-let prevWidth = window.innerWidth;
-let prevHeight = window.innerHeight;
-
 window.addEventListener("resize", () => {
   const newWidth = window.innerWidth;
-  const newHeight = window.innerHeight;
+  const newHeight = getScreenHeight();
 
-  // Ignore vertical-only height changes of small amounts (mobile address bar toggling)
-  if (isMobile && newWidth === prevWidth && Math.abs(newHeight - prevHeight) < 150) {
+  // If dimensions haven't changed (e.g. height is locked to screen height and width is constant), skip
+  if (newWidth === sizes.width && newHeight === sizes.height) {
     return;
   }
 
-  prevWidth = newWidth;
-  prevHeight = newHeight;
   sizes.width = newWidth;
   sizes.height = newHeight;
 
